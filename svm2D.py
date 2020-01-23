@@ -18,7 +18,7 @@ def monprogramme(Xapp, Yapp, C):
 	print("Apprentissage lancé avec " + str(len(Xapp)) + " points et C = ", C)
 
 	# à compléter pour apprendre le modèle SVM...
-	model = svm.LinearSVC(C=math.inf) # Noyau linéaire
+	model = svm.LinearSVC(C=C) # Noyau linéaire
 	model.fit(Xapp,Yapp)
 
 	# création d'une grille de points de test
@@ -156,6 +156,8 @@ def onkeypress(event):
 	elif event.key == "ctrl+-":
 		sigma /= 2
 		print("sigma = " , sigma)
+	elif event.key == "escape":
+		exit(0)
 				
 	
 fig = plt.figure()
