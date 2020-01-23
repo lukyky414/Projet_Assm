@@ -68,7 +68,8 @@ def monprogrammeNL(Xapp, Yapp, C, sigma):
 	print("Apprentissage lancé avec " + str(len(Xapp)) + " points, C = ", C, " et sigma = ", sigma )
 
 	# à compléter pour apprendre le modèle SVM non linéaire...
-	
+	model = svm.SVC(C=C, kernel='rbf', gamma=1/(2*sigma**2))  #Noyau gaussien
+	model.fit(Xapp,Yapp)
 	
 	# création d'une grille de points de test
 	r1 = np.arange(-5,5,0.2)
@@ -80,10 +81,11 @@ def monprogrammeNL(Xapp, Yapp, C, sigma):
 			i += 1
 	
 	# Prédire la catégorie pour tous les points de test...
+	Ytest = model.predict(Xtest)
 
 	
 	# ... et tracer le résultat avec par exemple 
-
+	plt.scatter(Xtest[:,0], Xtest[:,1], c=Ytest)
 
 	# afficher le nombre de vecteurs support...	
 
