@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
+from sklearn import neighbors
+from sklearn import svm
+
 
 
 #### programme principal à implémenter dans cette fonction ####
@@ -15,7 +18,8 @@ def monprogramme(Xapp, Yapp, C):
 	print("Apprentissage lancé avec " + str(len(Xapp)) + " points et C = ", C)
 
 	# à compléter pour apprendre le modèle SVM...
-
+	model = svm.LinearSVC(C=math.inf) # Noyau linéaire
+	model.fit(Xapp,Yapp)
 
 	# création d'une grille de points de test
 	r1 = np.arange(-5,5,0.2)
@@ -27,19 +31,28 @@ def monprogramme(Xapp, Yapp, C):
 			i += 1
 	
 	# Prédire la catégorie pour tous les points de test...
+	Ytest = model.predict(Xtest)
 	
-		
-	# ... et tracer le résultat avec par exemple 
-	
+	# ... et tracer le résultat avec par exemple
+	#plt.scatter(Xtest[:,0], Xtest[:,1], c=Ytest)
 	
 	# tracer la droite séparation et les marges... 
+	w = model.coef_[0]
+	b = model.intercept_
 	
-	
+	xx=np.linspace(-5,5)
+	yy=(-w[0]*xx-b)/w[1]
+	plt.plot(xx,yy)
+
 
 	# calculer et afficher la marge Delta...	
-
-
+	yy=(-w[0]*xx-b+1)/w[1]
+	plt.plot(xx,yy, 'k--')
 	
+	yy=(-w[0]*xx-b-1)/w[1]
+	plt.plot(xx,yy, 'k--')
+
+
 	# pour réellement mettre à jour le graphique: (à garder en fin de fonction)
 	fig.canvas.draw()
 
