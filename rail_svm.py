@@ -13,27 +13,14 @@ class Mon_Classifieur():
         self.nb_classes = nb_classes
         self.nb_point = Xapp.shape[0]
         self.classifieurs = []
+        for _ in range(nb_classes):
+            self.classifieurs.append(svm.LinearSVC(C = 1, max_iter = 10000))
 
     def apprentissage(self):
-        for i in range(self.nb_classes):
-            #Créer un classifieur
-            self.classifieurs.append(svm.LinearSVC(C = 1, max_iter = 10000))
-
-            #Tous les points sont la classe à rechercher
-            Y = np.ones((self.nb_classes, self.nb_point))
-            #Sauf ceux dont le Yapp != numéro du classifieur
-            Y[i,self.Yapp!=(i+1)] = -1
-
-            #Lancer l'apprentissage
-            self.classifieurs[i].fit(self.Xapp, Y[i])
-    
-    def apprentissage_loo(self):
-        for j in range(self.nb_classes):
-            #Créer un classifieur
-            self.classifieurs.append(svm.LinearSVC(C = 1, max_iter = 10000))
-
         err = 0
         all_err = np.zeros((self.nb_classes,1))
+
+        #Pour chaque points de la base
         for one_out in range(self.nb_point):
             #Afficher une barre de chargement
             print("  Training  [", end='')
@@ -42,12 +29,17 @@ class Mon_Classifieur():
                     print("#", end='')
                 else:
                     print(' ', end='')
-            print("] "+str(one_out+1), end='\r')
+            print("] "+str(one_out+1)+"     ", end='\r')
 
+            #Base sans le one out
             Xone_out = np.delete(self.Xapp, one_out, axis=0)
             Yone_out = np.delete(self.Yapp, one_out, axis=0)
 
+            #Permet de séparer la donnée out dans une array 2D
+            Xtest = np.array([self.Xapp[one_out,:]])
+            Ytest = self.Yapp[one_out]
 
+            #Classification
             for j in range(self.nb_classes):
                 #Tous les points sont la classe à rechercher
                 Y = np.ones((self.nb_classes, self.nb_point-1))
@@ -57,26 +49,27 @@ class Mon_Classifieur():
                 #Lancer l'apprentissage
                 self.classifieurs[j].fit(Xone_out, Y[j])
 
-                Ypred = self.classifieurs[j].predict(self.Xapp)
-                if (Ypred[one_out] == 1 and self.Yapp[one_out] != j+1) or (Ypred[one_out] == 0 and self.Yapp[one_out] == j+1) :
+                #Calcul de l'erreur de chacun des classifieurs
+                Ypred = self.classifieurs[j].predict(Xtest)
+                if (Ypred[0] == 1 and Ytest != j+1) or (Ypred[0] == 0 and Ytest == j+1) :
                     all_err[j] += 1
 
-            
-            Ypred = self.prediction(self.Xapp)
+            #Calcul de l'erreur multiclasse
+            Ypred = self.prediction(Xtest)
 
-
-            if Ypred[one_out] != self.Yapp[one_out] :
+            if Ypred[0] != Ytest :
                 err += 1
 
+        #Affichage des erreures
         err = err/self.nb_point
         all_err = np.divide(all_err, self.nb_point)
         print()
         print("L'erreur du LOO est en moyenne de "+str(int(err*100))+"%")
         for i in range(self.nb_classes) :
-            print("L'erreur du classifieur " + str(i+1) + " du LOO est en moyenne de "+str(int(all_err[i]*100))+"%")
+            print("Celle du classifieur " + str(i+1) + " est de "+str(int(all_err[i]*100))+"%")
 
 
-    
+    #Calcule la prédiction en utilisant tous les classifieurs
     def prediction(self, Xtest):
         all_pred = np.zeros((Xtest.shape[0], self.nb_classes))
 
@@ -88,33 +81,6 @@ class Mon_Classifieur():
         Ypred = np.argmax(all_pred, axis=1)+1
 
         return Ypred
-    
-    def every_pred(self, Xtest):
-        Ypred = np.zeros((Xtest.shape[0], self.nb_classes))
-
-        for i in range(self.nb_classes):
-            Ypred[:,i] = self.classifieurs[i].predict(Xtest)
-
-        return Ypred
-
-def evaluer(Ytest, Ypred):
-    nb = Ytest.shape[0]
-    err = np.count_nonzero(Ytest!=Ypred)
-
-    return err/nb
-
-def evaluer_all(Ytest, Ypred):
-    err = []
-
-    for i in range(Ypred.shape[1]):
-        err.append( 1 - (
-                np.count_nonzero(Ypred[Ytest==(i+1),i])
-                /
-                np.count_nonzero(Ytest==(i+1))
-            )
-        )
-
-    return err
 
 data = np.loadtxt('defautsrails.dat')
 nb_classes = 4
@@ -124,16 +90,4 @@ Y = data[:,-1].astype(int)
 
 classifieur = Mon_Classifieur(X, Y, nb_classes)
 
-classifieur.apprentissage_loo()
-
-# Ypred = classifieur.prediction(X)
-
-# err = evaluer(Y, Ypred)
-
-# print(str(int(err*100)) + "% d'erreur pour la classification")
-
-# Ypred = classifieur.every_pred(X)
-# err = evaluer_all(Y, Ypred)
-
-# for i in range(nb_classes):
-#     print(str(int(err[i]*100)) + "% d'erreur pour le classifieur " + str(i+1))
+classifieur.apprentissage()
