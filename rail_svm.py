@@ -30,70 +30,67 @@ class Mon_Classifieur():
             Ytest_one = self.Yapp[one_out]
 
             #Choix du meilleur C
-            best_c = 0
-            best_err = self.nb_point
-            c = 0
-            for c1 in possible_c:
-                for c2 in possible_c:
-                    for c3 in possible_c:
-                        for c4 in possible_c:
-                            c += 1
-                            self.classifieurs = []
-                            self.classifieurs.append(svm.LinearSVC(C = c1, max_iter = 10000))
-                            self.classifieurs.append(svm.LinearSVC(C = c2, max_iter = 10000))
-                            self.classifieurs.append(svm.LinearSVC(C = c3, max_iter = 10000))
-                            self.classifieurs.append(svm.LinearSVC(C = c4, max_iter = 10000))
-                            err = 0
-                            for two_out in range(self.nb_point-1):
-                                #barre de chargement
-                                print("Training pour "+str(one_out+1)+"/"+str(self.nb_point)+" C:[", end='')
-                                for i in range(100):
-                                    if i/100 < c/(len(possible_c)**4) :
-                                        print("#", end='')
-                                    else:
-                                        print(' ', end='')
-                                print("] I:[",end='')
-                                for i in range(20):
-                                    if i/20 < two_out/(self.nb_point-2) :
-                                        print("#", end='')
-                                    else:
-                                        print(' ', end='')
-                                print("] "+str(c1)+' '+str(c2)+' '+str(c3)+' '+str(c4)+"   ", end='\r')
-                                
-                                Xtwo_out = np.delete(Xone_out, two_out, axis=0)
-                                Ytwo_out = np.delete(Yone_out, two_out, axis=0)
-
-                                Xtest_two = np.array([Xone_out[two_out,:]])
-                                Ytest_two = Yone_out[two_out]
-
-                                #Classification
-                                for j in range(self.nb_classes):
-                                    #Tous les points sont la classe à rechercher
-                                    Y = np.ones((self.nb_classes, self.nb_point-2))
-                                    #Sauf ceux dont le Yapp != numéro du classifieur
-                                    Y[j,Ytwo_out!=(j+1)] = -1
-
-                                    #Lancer l'apprentissage
-                                    self.classifieurs[j].fit(Xtwo_out, Y[j])
-
-                                #Calcul de l'erreur multiclasse
-                                Ypred = self.prediction(Xtest_two)
-
-                                if Ypred[0] != Ytest_two :
-                                    err += 1
+            best_c = [0, 0, 0, 0]
+            best_err = [self.nb_point, self.nb_point, self.nb_point, self.nb_point]
+            counter = 0
+            for c in possible_c:
+                counter += 1
+                err = [0, 0, 0, 0]
+                #Reset les classifieurs
+                self.classifieurs = []
+                for _ in range(self.nb_classes):
+                    self.classifieurs.append(svm.LinearSVC(C = c, max_iter = 100000))
                 
-                #Garder le meilleur c
-                if err < best_err :
-                    best_c = c
-                    best_err = err
+                #Calcul de l'erreur
+                for two_out in range(self.nb_point-1):
+                    #barre de chargement
+                    print("Training pour "+str(one_out+1)+"/"+str(self.nb_point)+" (", end='')
+                    for i in range(len(possible_c)):
+                        if i < counter :
+                            print("#", end='')
+                        else:
+                            print(' ', end='')
+                    print(") [", end='')
+                    for i in range(20):
+                        if i/20 < two_out/(self.nb_point-1) :
+                            print("#", end='')
+                        else:
+                            print(' ', end='')
+                    print("]   ", end='\r')
+                    
+                    Xtwo_out = np.delete(Xone_out, two_out, axis=0)
+                    Ytwo_out = np.delete(Yone_out, two_out, axis=0)
+
+                    Xtest_two = np.array([Xone_out[two_out,:]])
+                    Ytest_two = Yone_out[two_out]
+
+                    #Classification
+                    for j in range(self.nb_classes):
+                        #Tous les points sont la classe à rechercher
+                        Y = np.ones((self.nb_classes, self.nb_point-2))
+                        #Sauf ceux dont le Yapp != numéro du classifieur
+                        Y[j,Ytwo_out!=(j+1)] = -1
+
+                        #Lancer l'apprentissage
+                        self.classifieurs[j].fit(Xtwo_out, Y[j])
+                        
+                        #Calcul de l'erreur séparément pour chaque classifieur
+                        Ypred = self.classifieurs[j].predict(Xtest_two)
+                        if ( Ypred[0] == 1 and Ytest_two != (j+1) ) or ( Ypred[0] == 0 and Ytest_two == (j+1) ) :
+                            err[j] += 1
+                
+                #Garder le meilleur c pour chaque classifieurs
+                for j in range(self.nb_classes):
+                    if err[j] < best_err[j] :
+                        best_c[j] = c
+                        best_err[j] = err[j]
 
             my_file.write("i:"+str(one_out)+" - c:"+str(best_c)+" - e:"+str(best_err)+"/"+str(self.nb_point-2)+"\n")
             
             #On a choisi le meilleur C, maintenant il faut apprendre dessus avec le one out
             self.classifieurs = []
-            for _ in range(nb_classes):
-                self.classifieurs.append(svm.LinearSVC(C = best_c, max_iter = 10000))
-
+            for j in range(nb_classes):
+                self.classifieurs.append(svm.LinearSVC(C = best_c[j], max_iter = 10000))
 
             #Classification
             for j in range(self.nb_classes):
