@@ -16,6 +16,7 @@ class Mon_Classifieur():
     def apprentissage(self):
         my_file = open("log.txt", "w+")
         err_gen = 0
+        possible_c = [0.01, 0.1, 1, 10, 100]
 
         #Pour chaque points de la base
         for one_out in range(self.nb_point):
@@ -31,42 +32,55 @@ class Mon_Classifieur():
             #Choix du meilleur C
             best_c = 0
             best_err = self.nb_point
-            for c in [0.01, 0.1, 1, 10, 100]:
-                self.classifieurs = []
-                for _ in range(nb_classes):
-                    self.classifieurs.append(svm.LinearSVC(C = c, max_iter = 10000))
-                err = 0
-                for two_out in range(self.nb_point-1):
-                    #barre de chargement
-                    print("Training pour "+str(one_out+1)+"/"+str(self.nb_point)+" [", end='')
-                    for i in range(20):
-                        if i/20 < two_out/(self.nb_point-1) :
-                            print("#", end='')
-                        else:
-                            print(' ', end='')
-                    print("] C="+str(c)+"      ", end='\r')
-                    
-                    Xtwo_out = np.delete(Xone_out, two_out, axis=0)
-                    Ytwo_out = np.delete(Yone_out, two_out, axis=0)
+            c = 0
+            for c1 in possible_c:
+                for c2 in possible_c:
+                    for c3 in possible_c:
+                        for c4 in possible_c:
+                            c += 1
+                            self.classifieurs = []
+                            self.classifieurs.append(svm.LinearSVC(C = c1, max_iter = 10000))
+                            self.classifieurs.append(svm.LinearSVC(C = c2, max_iter = 10000))
+                            self.classifieurs.append(svm.LinearSVC(C = c3, max_iter = 10000))
+                            self.classifieurs.append(svm.LinearSVC(C = c4, max_iter = 10000))
+                            err = 0
+                            for two_out in range(self.nb_point-1):
+                                #barre de chargement
+                                print("Training pour "+str(one_out+1)+"/"+str(self.nb_point)+" C:[", end='')
+                                for i in range(100):
+                                    if i/100 < c/(len(possible_c)**4) :
+                                        print("#", end='')
+                                    else:
+                                        print(' ', end='')
+                                print("] I:[",end='')
+                                for i in range(20):
+                                    if i/20 < two_out/(self.nb_point-2) :
+                                        print("#", end='')
+                                    else:
+                                        print(' ', end='')
+                                print("] "+str(c1)+' '+str(c2)+' '+str(c3)+' '+str(c4)+"   ", end='\r')
+                                
+                                Xtwo_out = np.delete(Xone_out, two_out, axis=0)
+                                Ytwo_out = np.delete(Yone_out, two_out, axis=0)
 
-                    Xtest_two = np.array([Xone_out[two_out,:]])
-                    Ytest_two = Yone_out[two_out]
+                                Xtest_two = np.array([Xone_out[two_out,:]])
+                                Ytest_two = Yone_out[two_out]
 
-                    #Classification
-                    for j in range(self.nb_classes):
-                        #Tous les points sont la classe à rechercher
-                        Y = np.ones((self.nb_classes, self.nb_point-2))
-                        #Sauf ceux dont le Yapp != numéro du classifieur
-                        Y[j,Ytwo_out!=(j+1)] = -1
+                                #Classification
+                                for j in range(self.nb_classes):
+                                    #Tous les points sont la classe à rechercher
+                                    Y = np.ones((self.nb_classes, self.nb_point-2))
+                                    #Sauf ceux dont le Yapp != numéro du classifieur
+                                    Y[j,Ytwo_out!=(j+1)] = -1
 
-                        #Lancer l'apprentissage
-                        self.classifieurs[j].fit(Xtwo_out, Y[j])
+                                    #Lancer l'apprentissage
+                                    self.classifieurs[j].fit(Xtwo_out, Y[j])
 
-                    #Calcul de l'erreur multiclasse
-                    Ypred = self.prediction(Xtest_two)
+                                #Calcul de l'erreur multiclasse
+                                Ypred = self.prediction(Xtest_two)
 
-                    if Ypred[0] != Ytest_two :
-                        err += 1
+                                if Ypred[0] != Ytest_two :
+                                    err += 1
                 
                 #Garder le meilleur c
                 if err < best_err :
