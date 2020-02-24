@@ -85,7 +85,7 @@ class Mon_Classifieur():
                         best_c[j] = c
                         best_err[j] = err[j]
 
-            my_file.write("i:"+str(one_out)+" - c:"+str(best_c)+" - e:"+str(best_err)+"/"+str(self.nb_point-2)+"\n")
+            my_file.write("i:"+str(one_out)+" - c:"+str(best_c)+" - e:"+str(best_err)+"\n")
             
             #On a choisi le meilleur C, maintenant il faut apprendre dessus avec le one out
             self.classifieurs = []
